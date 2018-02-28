@@ -32,8 +32,8 @@ public class HttpURLConnectionARCGIS {
     //data to create the REST URL based on server, port and Albers Conical Equal Area [Florida Geographic Data Library] infomation
     private String URL_BASE = "https://";
     private String servicemap = "/arcgis/rest/services/flidar_mosaic_ft_w_data/MapServer/";
-    private String host = "";
-    private String port = "";
+    private String host = ""; //should be filled with your host 
+    private String port = ""; //should be filled with your port
     private String command = "identify";
     private String GeoType = "esriGeometryPoint";
     private String spatialReference = "4326";
