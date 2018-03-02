@@ -2,8 +2,6 @@
  * Created by Samira Pouyanfar (spouy001@cs.fiu.edu) on 2/8/18.
  */
 import java.net.*;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.io.*;
 import javax.net.ssl.HostnameVerifier;
@@ -25,25 +23,17 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.stream.Collectors;
 
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-import java.security.cert.X509Certificate;
-
 /**
- * Demonstrates usage of the ArcGIS REST API with HTTPS.
- * Creates an output with ground elevation according to a given policy file.
+ * Demonstrates usage of the REST Binding API with HTTPS.
+ * Creates a project according to a given XML file.
  */
 public class HttpURLConnectionARCGIS {
 
-    //data to create the REST URL based on server, port and Albers Conical Equal Area [Florida Geographic Data Library] information
+    //data to create the REST URL based on server, port and Albers Conical Equal Area [Florida Geographic Data Library] infomation
     private String URL_BASE = "https://";
     private String servicemap = "/arcgis/rest/services/flidar_mosaic_ft_w_data/MapServer/";
-    private String host = ""; //add your host
-    private String port = "";  // add your port number
+    private String host = "";
+    private String port = "";
     private String command = "identify";
     private String GeoType = "esriGeometryPoint";
     private String spatialReference = "4326";
@@ -56,8 +46,14 @@ public class HttpURLConnectionARCGIS {
             layer + "&layerDefs=&time=&layerTimeOptions=" + "&tolerance=2" + "&mapExtent=" + mapExtend+"&imageDisplay=600%2C550%2C96"+
             "&returnGeometry=false&maxAllowableOffset=&geometryPrecision=&dynamicLayers=&returnZ=false&returnM=false&gdbVersion=&returnUnformattedValues=false&returnFieldName=false&datumTransformations=&layerParameterValues=&mapRangeValues=&layerRangeValues=&f" +
             format;
+    public static class MyHostnameVerifier implements HostnameVerifier {
+        public boolean verify(String hostname, SSLSession session) {
+// verification of hostname is switched off
+            return true;
+        }
+    }
 
-    private   void GetElevation(String input, String output) throws NoSuchAlgorithmException, KeyManagementException {
+    private   void GetElevation(String input, String output) {
         String line = null;
         int counter = 0;
         String elevation = null;
@@ -71,7 +67,7 @@ public class HttpURLConnectionARCGIS {
                 //skip first row (column name)
                 if (counter != 0) {
                     //get second and third columns as lat, long
-                    elevation = Connection(generateURL(currnetRow.get(1), currnetRow.get(2)));
+                    elevation = Connection(generateURL(currnetRow.get(1).toString(), currnetRow.get(2).toString()));
                     //save elevation in third column
                     currnetRow.set(3, elevation);
                     System.out.println(elevation);
@@ -109,34 +105,21 @@ public class HttpURLConnectionARCGIS {
         return url;
     }
 
-    private  String Connection(URL url) throws IOException, KeyManagementException, NoSuchAlgorithmException {
+    private  String Connection(URL url) throws IOException {
         String raster = null;
         String method = "POST";
         String userName = "";
         String password = "";
         String authentication = userName + ':' + password;
         // open HTTPS connection
-        SSLContext sc = SSLContext.getInstance("SSL");
-        sc.init(null, trustAllCerts, new java.security.SecureRandom());
-        HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-        // Create all-trusting host name verifier
-        HostnameVerifier allHostsValid = new HostnameVerifier() {
-            public boolean verify(String hostname, SSLSession session) {
-                return true;
-            }
-        };
-        // Install the all-trusting host verifier
-        HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
-
-
         HttpURLConnection connection = null;
         connection = (HttpsURLConnection) url.openConnection();
-        //((HttpsURLConnection) connection).setHostnameVerifier(new MyHostnameVerifier());
-        //connection.setRequestProperty("Content-Type", "text/plain; charset=\"utf8\"");
+        ((HttpsURLConnection) connection).setHostnameVerifier(new MyHostnameVerifier());
+        connection.setRequestProperty("Content-Type", "text/plain; charset=\"utf8\"");
         connection.setRequestMethod(method);
-        //BASE64Encoder encoder = new BASE64Encoder();
-        //String encoded = encoder.encode((authentication).getBytes("UTF-8"));
-        //connection.setRequestProperty("Authorization", "Basic " + encoded);
+        BASE64Encoder encoder = new BASE64Encoder();
+        String encoded = encoder.encode((authentication).getBytes("UTF-8"));
+        connection.setRequestProperty("Authorization", "Basic " + encoded);
         // execute HTTPS request
         int returnCode = connection.getResponseCode();
         InputStream connectionIn = null;
@@ -160,17 +143,6 @@ public class HttpURLConnectionARCGIS {
         buffer.close();
         return raster;
     }
-
-    private TrustManager[] trustAllCerts = new TrustManager[] {new X509TrustManager() {
-        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-            return null;
-        }
-        public void checkClientTrusted(X509Certificate[] certs, String authType) {
-        }
-        public void checkServerTrusted(X509Certificate[] certs, String authType) {
-        }
-    }
-    };
 
 
     public static void main(String[] args) throws Exception {
