@@ -146,6 +146,7 @@ public class HttpURLConnectionARCGIS {
 
 
     public static void main(String[] args) throws Exception {
+
         Instant start = Instant.now();
         // input format: ID,lat,long,elevation,...
         String orgPolicyPath = "data/test.csv";
